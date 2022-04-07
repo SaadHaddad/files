@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f ../docker-compose.yml
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: storefront
+  name: storefront
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: storefront
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f ../docker-compose.yml
+        kompose.version: 1.26.1 (a9d05d509)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/saleor-backend-tier: "true"
+        io.kompose.service: storefront
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - (nginx &) && npm run start
+          image: localhost:5000/saleor-platform_storefront:latest
+          name: storefront
+          ports:
+            - containerPort: 3000
+          resources: {}
+          volumeMounts:
+            - mountPath: /app
+              name: storefront-claim0
+            - mountPath: /app/node_modules/
+              name: storefront-claim1
+      restartPolicy: Always
+      volumes:
+        - name: storefront-claim0
+          persistentVolumeClaim:
+            claimName: storefront-claim0
+        - name: storefront-claim1
+          persistentVolumeClaim:
+            claimName: storefront-claim1
+status: {}

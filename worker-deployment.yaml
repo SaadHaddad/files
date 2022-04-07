@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f ../docker-compose.yml
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: worker
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: worker
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f ../docker-compose.yml
+        kompose.version: 1.26.1 (a9d05d509)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/saleor-backend-tier: "true"
+        io.kompose.service: worker
+    spec:
+      containers:
+        - args:
+            - celery
+            - -A
+            - saleor
+            - --app=saleor.celeryconf:app
+            - worker
+            - --loglevel=info
+            - -B
+          env:
+            - name: CELERY_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: CELERY_BROKER_URL
+                  name: backend-env
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: DATABASE_URL
+                  name: backend-env
+            - name: DEFAULT_CHANNEL_SLUG
+              valueFrom:
+                configMapKeyRef:
+                  key: DEFAULT_CHANNEL_SLUG
+                  name: common-env
+            - name: DEFAULT_FROM_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  key: DEFAULT_FROM_EMAIL
+                  name: backend-env
+            - name: SECRET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  key: SECRET_KEY
+                  name: backend-env
+          image: saadhaddad/saleor-platform_worker:v1
+          name: worker
+          resources: {}
+          volumeMounts:
+            - mountPath: /app/saleor
+              name: worker-claim0
+            - mountPath: /app/templates
+              name: worker-claim1
+            - mountPath: /app/media
+              name: saleor-media
+      restartPolicy: Always
+      volumes:
+        - name: worker-claim0
+          persistentVolumeClaim:
+            claimName: worker-claim0
+        - name: worker-claim1
+          persistentVolumeClaim:
+            claimName: worker-claim1
+        - name: saleor-media
+          persistentVolumeClaim:
+            claimName: saleor-media
+status: {}
